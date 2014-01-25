@@ -26,10 +26,236 @@ window.plugin.drawTools.loadExternals = function() {
   try { console.log('Loading leaflet.draw JS now'); } catch(e) {}
   @@INCLUDERAW:external/leaflet.draw.js@@
   try { console.log('done loading leaflet.draw JS'); } catch(e) {}
+  
+  try { console.log('Loading save/load extension to leaflet.draw JS now'); } catch(e) {}
+
+  L.SaveToolbar = L.Toolbar.extend({
+    options: {
+      save: {}
+    },
+
+    initialize: function (options) {
+      // Need to set this manually since null is an acceptable value here
+      if (options.save) {
+        options.save = L.extend({}, this.options.save, options.save);
+      }
+
+      this._downloadLink = null;
+      this._fileInput = null;
+
+      L.Toolbar.prototype.initialize.call(this, options);
+    },
+
+    addToolbar: function (map) {
+      var container = L.DomUtil.create('div', 'leaflet-draw-section'),
+        buttonIndex = 0,
+        buttonClassPrefix = 'leaflet-draw-edit';
+
+      // Create an invisible file input 
+      var fileInput = L.DomUtil.create('input', 'hidden', container);
+      fileInput.type = 'file';
+      fileInput.accept = '.drawn';
+      fileInput.style.display = 'none';
+      // Load on file change
+      var that = this;
+      fileInput.addEventListener("change", function (e) {
+        that._loadFile(this.files[0]);
+      }, false);
+      this._fileInput = fileInput;
+
+      this._toolbarContainer = L.DomUtil.create('div', 'leaflet-draw-toolbar leaflet-bar');
+
+      this._map = map;
+
+      if (this.options.save) {
+        this._initModeHandler(
+          new L.SaveToolbar.Save(map, {toolbar: this}),
+          this._toolbarContainer,
+          buttonIndex++,
+          buttonClassPrefix,
+          'Save drawn items'
+        );
+      }
+
+      // Save button index of the last button, -1 as we would have ++ after the last button
+      this._lastButtonIndex = --buttonIndex;
+
+      // Create the actions part of the toolbar
+      this._actionsContainer = this._createActions([
+        {
+          title: 'Save drawn items',
+          text: 'Save',
+          callback: this.disable,
+          context: this
+        },
+        {
+          title: 'Load drawn items',
+          text: 'Load',
+          callback: this._load,
+          context: this
+        },
+        {
+          title: 'Cancel',
+          text: 'Cancel',
+          callback: this.disable,
+          context: this
+        }
+      ]);
+
+      this._downloadLink = this._actionButtons[0].button;
+      
+      // reenable default actions on click to make downloading work
+      L.DomEvent
+        .off(this._downloadLink, 'click', L.DomEvent.stopPropagation)
+        .off(this._downloadLink, 'mousedown', L.DomEvent.stopPropagation)
+        .off(this._downloadLink, 'dblclick', L.DomEvent.stopPropagation)
+        .off(this._downloadLink, 'click', L.DomEvent.preventDefault);
+
+
+      // Add draw and cancel containers to the control container
+      container.appendChild(this._toolbarContainer);
+      container.appendChild(this._actionsContainer);
+
+      return container;
+    },
+
+    disable: function () {
+      if (!this.enabled()) { return; }
+
+      L.Toolbar.prototype.disable.call(this);
+    },
+
+    createDownloadLink: function () {
+      var dataStr = localStorage['plugin-draw-tools-layer'];
+      if (dataStr === undefined) {
+        // TODO better error handling
+        dataStr = "";
+      }
+
+      var bb = new Blob([dataStr], {type: 'text/plain'});
+
+      this._downloadLink.download = "iitc.drawn";
+      this._downloadLink.href = window.URL.createObjectURL(bb);
+
+      this._downloadLink.dataset.downloadurl = ['text/plain', this._downloadLink.download, this._downloadLink.href].join(':');
+    },
+
+    _load: function () {
+      this._fileInput.click();
+      this._activeMode.handler.disable();
+    },
+
+    _loadFile: function (file /* File */) {
+      // Check file extension
+      var ext = file.name.split('.').pop();
+      if (ext.toLowerCase() != 'drawn') {
+        window.alert("Unsupported file type " + file.type + '(' + ext + ')');
+        return;
+      }
+      // Read selected file using HTML5 File API
+      var reader = new FileReader();
+      var that = this;
+      reader.onload = L.Util.bind(function (e) {
+        that._addItems(e.target.result);
+      }, this);
+      reader.readAsText(file);
+    },
+
+    _addItems: function (items /* JSON string */) {
+      items = JSON.parse(items);
+
+      $.each(items, function(index,item) {
+        var layer = null;
+        switch(item.type) {
+          case 'polyline':
+            layer = L.geodesicPolyline(item.latLngs,window.plugin.drawTools.lineOptions);
+            break;
+          case 'polygon':
+            layer = L.geodesicPolygon(item.latLngs,window.plugin.drawTools.polygonOptions);
+            break;
+          case 'circle':
+            layer = L.geodesicCircle(item.latLng,item.radius,window.plugin.drawTools.polygonOptions);
+            break;
+          case 'marker':
+            layer = L.marker(item.latLng,window.plugin.drawTools.markerOptions)
+            break;
+          default:
+            console.warn('unknown layer type "'+item.type+'" when loading draw tools layer');
+            break;
+        }
+        if (layer) {
+          window.plugin.drawTools.drawnItems.addLayer(layer);
+        }
+      });
+    }
+  });
+
+  L.SaveToolbar.Save = L.Handler.extend({
+    statics: {
+      TYPE: 'save' // not delete as delete is reserved in js
+    },
+
+    includes: L.Mixin.Events,
+
+    initialize: function (map, options) {
+      L.Handler.prototype.initialize.call(this, map);
+
+      L.Util.setOptions(this, options);
+
+      this._toolbar = options.toolbar;
+
+      // Save the type so super can fire, need to do this as cannot do this.TYPE :(
+      this.type = L.SaveToolbar.Save.TYPE;
+    },
+
+    enable: function () {
+      if (this._enabled) { return; }
+
+      L.Handler.prototype.enable.call(this);
+
+      this.fire('enabled', { handler: this.type});
+    },
+
+    disable: function () {
+      if (!this._enabled) { return; }
+
+      L.Handler.prototype.disable.call(this);
+
+      this.fire('disabled', { handler: this.type});
+    },
+
+    addHooks: function () {
+      this._toolbar.createDownloadLink();
+    },
+
+    removeHooks: function () {
+    },
+  });
+
+  L.Control.Draw.prototype.initialize__ = L.Control.Draw.prototype.initialize;
+
+  L.Control.Draw.prototype.initialize = function (options) {
+    this.initialize__(options);
+
+    // Add toolbar for saving / loading drawn items
+    var toolbar, id;
+    toolbar = new L.SaveToolbar({});
+    id = L.stamp(toolbar);
+    this._toolbars[id] = toolbar;
+
+    // Listen for when toolbar is enabled
+    this._toolbars[id].on('enable', this._toolbarEnabled, this);
+  }
+
+  try { console.log('done loading save/load extension to leaflet.draw JS'); } catch(e) {}
+
 
   window.plugin.drawTools.boot();
 
   $('head').append('<style>@@INCLUDESTRING:external/leaflet.draw.css@@</style>');
+  
+  $('head').append('<style>\n.leaflet-draw-actions .leaflet-color-picker > span {\nposition: absolute;\n}\n.leaflet-draw-actions .leaflet-color-picker span a {\npadding: 4px;\nline-height: 17px;\nborder-radius: 0;\nheight: 19px;\nwidth: 19px;\n}\n.leaflet-draw-actions .leaflet-color-picker span a span {\nborder: 1px solid #aaaaaa;\ndisplay: block;\nwidth: 17px;\nborder-radius: 3px;\n}\n.leaflet-draw-actions .leaflet-color-picker span a:first-child {\nborder-radius: 4px 4px 0 0;\n}\n.leaflet-draw-actions .leaflet-color-picker span a:last-child {\nborder-radius: 0 0 4px 4px;\n}\n</style>\n');
+
 }
 
 window.plugin.drawTools.setOptions = function() {
