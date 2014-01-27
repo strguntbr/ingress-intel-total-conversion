@@ -192,7 +192,7 @@ window.plugin.drawTools.loadExternals = function() {
 
   L.SaveToolbar.Save = L.Handler.extend({
     statics: {
-      TYPE: 'save' // not delete as delete is reserved in js
+      TYPE: 'save'
     },
 
     includes: L.Mixin.Events,
