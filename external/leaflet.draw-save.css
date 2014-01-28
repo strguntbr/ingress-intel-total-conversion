@@ -1,0 +1,31 @@
+.leaflet-draw-actions .leaflet-color-picker > span {
+	position: absolute;
+}
+
+.leaflet-draw-actions .leaflet-color-picker span a {
+	padding: 4px;
+	line-height: 17px;
+	border-radius: 0;
+	height: 19px;
+	width: 19px;
+}
+
+.leaflet-draw-actions .leaflet-color-picker span a span {
+	border: 1px solid #aaaaaa;
+	display: block;
+	width: 17px;
+	border-radius: 3px;
+}
+
+.leaflet-draw-actions .leaflet-color-picker span a:first-child {
+	border-radius: 4px 4px 0 0;
+}
+
+.leaflet-draw-actions .leaflet-color-picker span a:last-child {
+	border-radius: 0 0 4px 4px;
+}
+
+a.leaflet-draw-save-save {
+	background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3gEbFgQy6ohllwAAAOhJREFUSMftlTFqAlEURY9hFmAfmEaJuAOrTKrb2wvZgJDaRoI7cA9ZQOpbBJwmbmFKXcFgYxmbKSzE/4eMhfJv9+H+d7jv8XiQlJR07+qFDJIGwBcwiai3ANa2j12Af4EKeAcK2+UFzx8wBT6BPjAOwZ8iUkyAJYDtUlJ1yWT7G3gDauAjVDQGjO392fPliq9uUs87AZ+19NV2aDw/wHOoVtaCWwIbSaHuHEKeVmDbRZfrlLVsdRWYce8mYNujlPimiSXltvcxiSXlXYG3wErSMjLxqvnzb/CsORK7mP1sNEz3Nynp8XUCfQJOsTdn2nYAAAAASUVORK5CYII=");
+	background-position: -2px -2px;
+}
