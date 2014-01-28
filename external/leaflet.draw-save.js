@@ -215,7 +215,7 @@ L.SaveToolbar = L.Toolbar.extend({
 		var bb = new Blob([dataStr], {type: 'text/plain'});
 
 		this._downloadLink.download = this.options.fileName + '.' + this.options.filePrefix;
-		this._downloadLink.href = window.URL.createObjectURL(bb);
+		this._downloadLink.href = (window.webkitURL ? window.webkitURL : window.URL).createObjectURL(bb);
 
 		this._downloadLink.dataset.downloadurl = ['text/plain', this._downloadLink.download, this._downloadLink.href].join(':');
 	},
