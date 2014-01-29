@@ -36,8 +36,8 @@ L.drawLocal = L.Util.extend({}, L.drawLocal, {
 L.SaveToolbar = L.Toolbar.extend({
 	options: {
 		save: false,
-		filePrefix: 'drawn',
-		fileName: 'leaflet',
+		fileExt: 'ldi',
+		fileName: 'my-drawings',
 		polylineOptions: {
 			stroke: true,
 			color: '#f06eaa',
@@ -118,7 +118,7 @@ L.SaveToolbar = L.Toolbar.extend({
 		// Create an invisible file input 
 		var fileInput = L.DomUtil.create('input', 'hidden', container);
 		fileInput.type = 'file';
-		fileInput.accept = '.' + this.options.filePrefix;
+		fileInput.accept = '.' + this.options.fileExt;
 		fileInput.style.display = 'none';
 		// Load on file change
 		var that = this;
@@ -155,7 +155,6 @@ L.SaveToolbar = L.Toolbar.extend({
 			{
 				title: L.drawLocal.save.toolbar.actions.load.title,
 				text: L.drawLocal.save.toolbar.actions.load.text,
-				//callback: (window.requestFile !== undefined ? this._loadAndroid : this._loadDesktop),
 				callback: this.load,
 				context: this
 			},
@@ -214,7 +213,7 @@ L.SaveToolbar = L.Toolbar.extend({
 
 		var bb = new Blob([dataStr], {type: 'text/plain'});
 
-		this._downloadLink.download = this.options.fileName + '.' + this.options.filePrefix;
+		this._downloadLink.download = this.options.fileName + '.' + this.options.fileExt;
 		this._downloadLink.href = (window.webkitURL ? window.webkitURL : window.URL).createObjectURL(bb);
 
 		this._downloadLink.dataset.downloadurl = ['text/plain', this._downloadLink.download, this._downloadLink.href].join(':');
@@ -254,18 +253,6 @@ L.SaveToolbar = L.Toolbar.extend({
 		this._activeMode.handler.disable();
 	},
 
-/*	_loadAndroid: function() {
-		var that = this;
-		window.requestFile(function(filename, content) {
-			if (!that._checkExtension(filename)) {
-				return;
-			}
-
-			that._addItems(content);
-		});
-		this._activeMode.handler.disable();
-	},*/
-
 	_loadFile: function (file /* File */) {
 		if (!this._checkExtension(file.name)) {
 			return;
@@ -282,7 +269,7 @@ L.SaveToolbar = L.Toolbar.extend({
 
 	_checkExtension: function (filename) {
 		var ext = filename.split('.').pop();
-		if (ext.toLowerCase() != this.options.filePrefix) {
+		if (ext.toLowerCase() != this.options.fileExt) {
 			window.alert('Unsupported file type (' + ext + ')');
 			return false;
 		}

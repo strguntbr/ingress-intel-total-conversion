@@ -146,8 +146,8 @@ window.plugin.drawTools.addDrawControl = function() {
 
     save: {
       featureGroup: window.plugin.drawTools.drawnItems,
-      fileName: 'iitc',
-      filePrefix: 'drawn',
+      fileName: 'iitc-drawings',
+      filePrefix: 'idi',
       polylineOptions: window.plugin.drawTools.lineOptions,
       polygonOptions: window.plugin.drawTools.polygonOptions,
       circleOptions: window.plugin.drawTools.polygonOptions,
